@@ -14,7 +14,7 @@ A web-based 3D model viewer that allows you to visualize and interact with 3D mo
 
 ## Live Demo
 
-Visit the hosted version at: `https://bhuvaneshwaran-sg-19022.github.io/3D-Model-visualizer/`
+Visit the hosted version at: https://bhuvaneshwaran-sg-19022.github.io/3D-Model-visualizer/
 
 ## Usage
 

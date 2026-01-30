@@ -16,15 +16,15 @@
         <div class="controls">
             <div class="control-group">
                 <label for="fileInput" class="file-label">
-                    <span>📁 Load 3D Model</span>
-                    <input type="file" id="fileInput" accept=".obj,.stl,.gltf,.glb" />
+                    <span aria-label="Load 3D Model">📁 Load 3D Model</span>
+                    <input type="file" id="fileInput" accept=".obj,.stl,.gltf,.glb" aria-label="Upload 3D model file" />
                 </label>
             </div>
             
             <div class="control-group">
-                <button id="resetCamera">🔄 Reset View</button>
-                <button id="toggleWireframe">🔲 Wireframe</button>
-                <button id="toggleGrid">⊞ Grid</button>
+                <button id="resetCamera" aria-label="Reset camera view">🔄 Reset View</button>
+                <button id="toggleWireframe" aria-label="Toggle wireframe mode">🔲 Wireframe</button>
+                <button id="toggleGrid" aria-label="Toggle grid display">⊞ Grid</button>
             </div>
             
             <div class="control-group">
@@ -33,7 +33,7 @@
             </div>
         </div>
         
-        <div id="viewer-container">
+        <div id="viewer-container" tabindex="0" role="region" aria-label="3D model viewer">
             <div id="loading" class="hidden">
                 <div class="spinner"></div>
                 <p>Loading model...</p>

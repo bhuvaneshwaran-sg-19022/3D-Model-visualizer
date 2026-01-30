@@ -127,11 +127,13 @@ class ModelViewer {
         loading.classList.remove('hidden');
         info.classList.add('hidden');
         
-        // Remove previous model
+        // Remove previous model and clear materials map
         if (this.currentModel) {
             this.scene.remove(this.currentModel);
             this.currentModel = null;
         }
+        this.originalMaterials.clear();
+        this.wireframeMode = false;
         
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -143,17 +145,17 @@ class ModelViewer {
                 } else if (fileName.endsWith('.gltf') || fileName.endsWith('.glb')) {
                     this.loadGLTF(e.target.result, fileName.endsWith('.glb'));
                 } else {
-                    alert('Unsupported file format. Please use .obj, .stl, .gltf, or .glb files.');
+                    this.showError('Unsupported file format. Please use .obj, .stl, .gltf, or .glb files.');
                     loading.classList.add('hidden');
                 }
             } catch (error) {
                 console.error('Error loading model:', error);
-                alert('Error loading model. Please check the file format.');
+                this.showError('Error loading model. Please check the file format.');
                 loading.classList.add('hidden');
             }
         };
         
-        if (fileName.endsWith('.glb')) {
+        if (fileName.endsWith('.glb') || fileName.endsWith('.stl')) {
             reader.readAsArrayBuffer(file);
         } else {
             reader.readAsText(file);
@@ -163,6 +165,18 @@ class ModelViewer {
     loadOBJ(data) {
         const loader = new OBJLoader();
         const object = loader.parse(data);
+        
+        // Apply default material to OBJ models that don't have materials
+        object.traverse((child) => {
+            if (child.isMesh && !child.material) {
+                child.material = new THREE.MeshPhongMaterial({
+                    color: 0x888888,
+                    specular: 0x111111,
+                    shininess: 200
+                });
+            }
+        });
+        
         this.setupModel(object);
     }
     
@@ -182,16 +196,18 @@ class ModelViewer {
     
     loadGLTF(data, isBinary) {
         const loader = new GLTFLoader();
+        const loading = document.getElementById('loading');
         
-        if (isBinary) {
-            loader.parse(data, '', (gltf) => {
+        loader.parse(data, '', 
+            (gltf) => {
                 this.setupModel(gltf.scene);
-            });
-        } else {
-            loader.parse(data, '', (gltf) => {
-                this.setupModel(gltf.scene);
-            });
-        }
+            },
+            (error) => {
+                console.error('Error parsing GLTF:', error);
+                this.showError('Error loading GLTF model. Please check the file format.');
+                loading.classList.add('hidden');
+            }
+        );
     }
     
     setupModel(model) {
@@ -263,21 +279,27 @@ class ModelViewer {
         this.wireframeMode = !this.wireframeMode;
         
         if (this.currentModel) {
+            // Create a single wireframe material to reuse
+            if (!this.wireframeMaterial) {
+                this.wireframeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x00ff00,
+                    wireframe: true
+                });
+            }
+            
             this.currentModel.traverse((child) => {
                 if (child.isMesh) {
                     if (this.wireframeMode) {
                         // Store original material
                         this.originalMaterials.set(child, child.material);
                         // Apply wireframe material
-                        child.material = new THREE.MeshBasicMaterial({
-                            color: 0x00ff00,
-                            wireframe: true
-                        });
+                        child.material = this.wireframeMaterial;
                     } else {
                         // Restore original material
                         const original = this.originalMaterials.get(child);
                         if (original) {
                             child.material = original;
+                            this.originalMaterials.delete(child);
                         }
                     }
                 }
@@ -300,9 +322,21 @@ class ModelViewer {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
+    
+    showError(message) {
+        const info = document.getElementById('info');
+        info.innerHTML = `<p style="color: #ff6b6b;">❌ ${message}</p>`;
+        info.classList.remove('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            info.innerHTML = `
+                <p>Drag and drop a 3D model file (.obj, .stl, .gltf, .glb) or use the Load button</p>
+                <p>Controls: Left click + drag to rotate | Right click + drag to pan | Scroll to zoom</p>
+            `;
+        }, 5000);
+    }
 }
 
-// Initialize viewer when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new ModelViewer();
-});
+// Initialize viewer - DOM is guaranteed to be ready with ES6 modules
+new ModelViewer();
