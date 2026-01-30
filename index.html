@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>3D Model Visualizer</h1>
+            <p>Upload and visualize your 3D models in the browser</p>
+        </header>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="fileInput" class="file-label">
+                    <span>📁 Load 3D Model</span>
+                    <input type="file" id="fileInput" accept=".obj,.stl,.gltf,.glb" />
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <button id="resetCamera">🔄 Reset View</button>
+                <button id="toggleWireframe">🔲 Wireframe</button>
+                <button id="toggleGrid">⊞ Grid</button>
+            </div>
+            
+            <div class="control-group">
+                <label for="bgColor">Background:</label>
+                <input type="color" id="bgColor" value="#1a1a2e" />
+            </div>
+        </div>
+        
+        <div id="viewer-container">
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Loading model...</p>
+            </div>
+            <div id="info">
+                <p>Drag and drop a 3D model file (.obj, .stl, .gltf, .glb) or use the Load button</p>
+                <p>Controls: Left click + drag to rotate | Right click + drag to pan | Scroll to zoom</p>
+            </div>
+        </div>
+        
+        <div id="stats" class="hidden">
+            <h3>Model Information</h3>
+            <div id="statsContent"></div>
+        </div>
+    </div>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
