@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLB Model Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow: hidden;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+            background: #222; /* Darker workspace background */
+        }
+
+        #workspace {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #333;
+            overflow: auto;
+            position: relative;
+            padding: 40px;
+        }
+
+        #slide {
+            /* 16:9 Aspect Ratio Slide */
+            width: 960px; /* Base width */
+            aspect-ratio: 16 / 9;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            /* Center content in slide if needed, but for now it's a canvas board */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The resizable canvas container inside the slide */
+        #parent {
+            resize: both;
+            overflow: hidden;
+            width: 500px;
+            height: 500px;
+            background: #f5f5f5;
+            border: 1px dashed #999;
+            position: relative; 
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Removed old #canvas-container styles */
+        
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+
+        #controls {
+            width: 380px;
+            background: #2a2a2a;
+            display: flex;
+            flex-direction: row-reverse;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-container {
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;
+            border-left: 2px solid #333;
+            width: 45px;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 25px 0;
+            background: #1a1a1a;
+            color: #888;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border-bottom: 1px solid #333;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 1px;
+        }
+
+        .tab:last-child {
+            border-bottom: none;
+        }
+
+        .tab:hover {
+            background: #222;
+            color: #aaa;
+        }
+
+        .tab.active {
+            background: #2a2a2a;
+            color: #4CAF50;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #64B5F6;
+        }
+
+        .control-item {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background: #45a049;
+        }
+
+        input[type="color"] {
+            width: 60px;
+            height: 30px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #333;
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #4CAF50;
+            display: none;
+        }
+
+        #dimension-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            backdrop-filter: blur(2px);
+        }
+
+        #dimension-controls input {
+            width: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            padding: 4px;
+            border-radius: 3px;
+            font-size: 12px;
+            text-align: center;
+            outline: none;
+            color: #000;
+        }
+
+        #dimension-controls span {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #copyBtn {
+            position: absolute;
+            width: 200px;;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+        }
+
+        #copyBtn:hover {
+            background: #1976D2;
+        }
+
+        #copyBtn:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Copy Button -->
+    <button id="copyBtn" title="Copy current configuration to clipboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        Copy Settings
+    </button>
+
+    <div id="container">
+        <!-- New Slide Wrapper -->
+        <div id="workspace">
+            <div id="slide">
+                <!-- The 3D Canvas Container -->
+                <div id="parent">
+                    <div id="dimension-controls">
+                        <input type="number" id="canvas-width" title="Width (px)" />
+                        <span>×</span>
+                        <input type="number" id="canvas-height" title="Height (px)" />
+                    </div>
+                </div>
+            </div>
+            <div id="loading">Loading model...</div>
+        </div>
+        
+        <div id="controls">
+            <div class="tab-container">
+                <button class="tab active" onclick="openTab(event, 'modelTab')">Model</button>
+                <button class="tab" onclick="openTab(event, 'cameraTab')">Camera</button>
+                <button class="tab" onclick="openTab(event, 'envTab')">Environment</button>
+                <button class="tab" onclick="openTab(event, 'lightingTab')">Lighting</button>
+                <button class="tab" onclick="openTab(event, 'animationTab')">Animations</button>
+            </div>
+
+            <!-- Model Tab -->
+            <div id="modelTab" class="tab-content active">
+                <h1>Model Controls</h1>
+                
+                <div class="control-group">
+                    <h2>Load Model</h2>
+                    <input type="file" id="fileInput" accept=".glb,.gltf">
+                    <button id="downloadBtn">Download Image</button>
+                </div>
+
+                <div class="control-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="showHelpers" style="width: auto;"> 
+                        Show Grid & Axes (1 Unit Blocks)
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <h2>Model Dimensions</h2>
+                    <div class="control-item">
+                        <label>Width (X) <span class="value-display" id="model-dim-x">-</span></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Height (Y) <span class="value-display" id="model-dim-y">-</span></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Depth (Z) <span class="value-display" id="model-dim-z">-</span></label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Model Rotation</h2>
+                    <div class="control-item">
+                        <label>Rotation X <span class="value-display" id="rotX-value">0°</span></label>
+                        <input type="range" id="rotX" min="0" max="360" value="0" step="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Rotation Y <span class="value-display" id="rotY-value">0°</span></label>
+                        <input type="range" id="rotY" min="0" max="360" value="0" step="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Rotation Z <span class="value-display" id="rotZ-value">0°</span></label>
+                        <input type="range" id="rotZ" min="0" max="360" value="0" step="1">
+                    </div>
+                </div>
+
+                <button class="resetBtn">Reset All Settings</button>
+            </div>
+
+            <!-- Camera Tab -->
+            <div id="cameraTab" class="tab-content">
+                <h1>Camera Controls</h1>
+                
+                <div class="control-group">
+                    <h2>Camera Position</h2>
+                    <div class="control-item">
+                        <label>Position X <span class="value-display" id="camX-value">0</span></label>
+                        <input type="range" id="camX" min="-50" max="50" value="0" step="0.1">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Y <span class="value-display" id="camY-value">0</span></label>
+                        <input type="range" id="camY" min="-50" max="50" value="0" step="0.1">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Z <span class="value-display" id="camZ-value">30</span></label>
+                        <input type="range" id="camZ" min="-50" max="50" value="30" step="0.1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Camera Look At</h2>
+                    <div class="control-item">
+                        <label>Look At X <span class="value-display" id="lookX-value">0</span></label>
+                        <input type="range" id="lookX" min="-50" max="50" value="0" step="0.1">
+                    </div>
+                    <div class="control-item">
+                        <label>Look At Y <span class="value-display" id="lookY-value">0</span></label>
+                        <input type="range" id="lookY" min="-50" max="50" value="0" step="0.1">
+                    </div>
+                    <div class="control-item">
+                        <label>Look At Z <span class="value-display" id="lookZ-value">0</span></label>
+                        <input type="range" id="lookZ" min="-50" max="50" value="0" step="0.1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Camera FOV</h2>
+                    <div class="control-item">
+                        <label>Field of View <span class="value-display" id="fov-value">75°</span></label>
+                        <input type="range" id="fov" min="20" max="120" value="75" step="1">
+                    </div>
+                </div>
+
+                <button class="resetBtn">Reset All Settings</button>
+            </div>
+
+            <!-- Environment Tab -->
+            <div id="envTab" class="tab-content">
+                <h1>Environment</h1>
+                
+                <div class="control-group">
+                    <h2>Load HDRI</h2>
+                    <input type="file" id="hdriInput" accept=".hdr,.exr">
+                </div>
+
+                <div class="control-group">
+                    <h2>Environment Settings</h2>
+                    <div class="control-item">
+                        <label>Blurriness <span class="value-display" id="envBlur-value">0</span></label>
+                        <input type="range" id="envBlur" min="0" max="1" value="0" step="0.01">
+                    </div>
+                    <div class="control-item">
+                        <label>Intensity <span class="value-display" id="envIntensity-value">1</span></label>
+                        <input type="range" id="envIntensity" min="0" max="5" value="1" step="0.1">
+                    </div>
+                </div>
+
+                <button class="resetBtn">Reset All Settings</button>
+            </div>
+
+            <!-- Lighting Tab -->
+            <div id="lightingTab" class="tab-content">
+                <h1>Lighting</h1>
+                
+                <div class="control-group">
+                    <h2>Ambient Light</h2>
+                    <div class="control-item">
+                        <label>Color <input type="color" id="ambientColor" value="#ffffff"></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Intensity <span class="value-display" id="ambientIntensity-value">1.0</span></label>
+                        <input type="range" id="ambientIntensity" min="0" max="5" value="1.0" step="0.1">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Light 1 (Warm Key)</h2>
+                    <div class="control-item">
+                        <label>Color <input type="color" id="light1Color" value="#ffbf7f"></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Intensity <span class="value-display" id="light1Intensity-value">15</span></label>
+                        <input type="range" id="light1Intensity" min="0" max="50" value="15" step="0.5">
+                    </div>
+                    <div class="control-item">
+                        <label>Position X <span class="value-display" id="light1X-value">2.3</span></label>
+                        <input type="range" id="light1X" min="-10" max="10" value="2.3" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Y <span class="value-display" id="light1Y-value">2.7</span></label>
+                        <input type="range" id="light1Y" min="-10" max="10" value="2.7" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Z <span class="value-display" id="light1Z-value">1.634</span></label>
+                        <input type="range" id="light1Z" min="-10" max="10" value="1.634" step="0.001">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Light 2 (Cool Fill)</h2>
+                    <div class="control-item">
+                        <label>Color <input type="color" id="light2Color" value="#6699f2"></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Intensity <span class="value-display" id="light2Intensity-value">15</span></label>
+                        <input type="range" id="light2Intensity" min="0" max="50" value="15" step="0.5">
+                    </div>
+                    <div class="control-item">
+                        <label>Position X <span class="value-display" id="light2X-value">-3.796</span></label>
+                        <input type="range" id="light2X" min="-10" max="10" value="-3.796" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Y <span class="value-display" id="light2Y-value">5.113</span></label>
+                        <input type="range" id="light2Y" min="-10" max="10" value="5.113" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Z <span class="value-display" id="light2Z-value">5.763</span></label>
+                        <input type="range" id="light2Z" min="-10" max="10" value="5.763" step="0.001">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>Light 3 (Purple Accent)</h2>
+                    <div class="control-item">
+                        <label>Color <input type="color" id="light3Color" value="#ddb9ff"></label>
+                    </div>
+                    <div class="control-item">
+                        <label>Intensity <span class="value-display" id="light3Intensity-value">15</span></label>
+                        <input type="range" id="light3Intensity" min="0" max="50" value="15" step="0.5">
+                    </div>
+                    <div class="control-item">
+                        <label>Position X <span class="value-display" id="light3X-value">-3.774</span></label>
+                        <input type="range" id="light3X" min="-10" max="10" value="-3.774" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Y <span class="value-display" id="light3Y-value">5.806</span></label>
+                        <input type="range" id="light3Y" min="-10" max="10" value="5.806" step="0.001">
+                    </div>
+                    <div class="control-item">
+                        <label>Position Z <span class="value-display" id="light3Z-value">-3.477</span></label>
+                        <input type="range" id="light3Z" min="-10" max="10" value="-3.477" step="0.001">
+                    </div>
+                </div>
+
+                <button class="resetBtn">Reset All Settings</button>
+            </div>
+
+            <!-- Animation Tab -->
+            <div id="animationTab" class="tab-content">
+                <h1>Animations</h1>
+                <div id="animationList">
+                    <p style="color: #888; font-size: 14px;">No model loaded or no animations found.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="three.zscustom.js"></script>
+    <script src="rgbeloader.js"></script>
+
+    <script src="js/SceneManager.js"></script>
+    <script src="js/EnvironmentManager.js"></script>
+    <script src="js/LightingManager.js"></script>
+    <script src="js/AnimationManager.js"></script>
+    <script src="js/ModelManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            const threeDConfig = {
+                // Using LittlestTokyo.glb - a compressed GLB that uses Draco
+                url : 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+                id : 'littlest_tokyo',
+                modelProperties: {
+                    rotate : { x: 0, y: 0, z: 0 },
+                    // This model is large, so we scale it down to fit the camera view
+                    // scale: { x: 0.01, y: 0.01, z: 0.01 },
+                    camera: {
+                        position: { x: 0, y: 0, z: 30 },
+                        lookAt: { x: 0, y: 0, z: 0 },
+                        projection: {
+                            type: 'PERSPECTIVE', // or 'ORTHOGRAPHIC'
+                            perspective: {
+                                fieldOfView: 45,
+                            }
+                        }
+                    },
+                    value: {
+                        id: "001",
+                        pictureName: "DefaultCube",
+                        type : "USERDEFINED",
+                    }
+                },
+                canvasParent: document.body.querySelector("div#parent"),
+                isAnimatable: true,
+                isInteractable: true,
+                GLTFLoader: new ThreeBundle.GLTFLoader()
+            };
+            
+            window.viewer = initThreeDViewer(threeDConfig);
+        });
+    </script>
+</body>
+</html>
