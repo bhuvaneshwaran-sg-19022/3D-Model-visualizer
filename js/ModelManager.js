@@ -24,8 +24,9 @@ class ModelManager {
             console.warn('DRACOLoader definition not found in ThreeBundle or window');
         }
 
-        this.model = null;
         this.currentFileName = config.id || 'model';
+        this.model = null; // Re-adding initialization
+        this.boxHelperVisible = false;
         
         // Removed auto-loading from constructor as it's now handled by the library/ThreeDViewer
         // to properly handle animations and callbacks.
@@ -65,6 +66,9 @@ class ModelManager {
                 if (this.model) {
                     this.scene.remove(this.model);
                 }
+                if (this.boxHelper) {
+                    this.scene.remove(this.boxHelper);
+                }
                 
                 this.model = gltf.scene;
                 // Attach animations to the model so they're accessible
@@ -75,6 +79,13 @@ class ModelManager {
                 // If not interactable, maybe we want to center/scale it by default
                 // But the user provided scale/rotation in config, so let's respect that
                 this.applyModelProperties();
+
+                // Ensure transformation is applied before calculating box
+                this.model.updateMatrixWorld(true);
+
+                this.boxHelper = new THREE.Box3Helper(new THREE.Box3().setFromObject(this.model), 0xff0000);
+                this.boxHelper.visible = this.boxHelperVisible;
+                this.scene.add(this.boxHelper);
 
                 if (onLoad) onLoad(gltf);
             },
@@ -106,6 +117,9 @@ class ModelManager {
                 if (this.model) {
                     this.scene.remove(this.model);
                 }
+                if (this.boxHelper) {
+                    this.scene.remove(this.boxHelper);
+                }
                 
                 this.model = gltf.scene;
                 // Attach animations to the model so they're accessible
@@ -114,14 +128,20 @@ class ModelManager {
                 this.scene.add(this.model);
                 
                 // Center and scale model
-                // const box = new THREE.Box3().setFromObject(this.model);
-                // const center = box.getCenter(new THREE.Vector3());
-                // const size = box.getSize(new THREE.Vector3());
-                // const maxDim = Math.max(size.x, size.y, size.z);
-                // const scale = 2 / maxDim;
+                const box = new THREE.Box3().setFromObject(this.model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 2 / maxDim;
                 
-                // this.model.scale.multiplyScalar(scale);
-                // this.model.position.sub(center.multiplyScalar(scale));
+                this.model.scale.multiplyScalar(scale);
+                this.model.position.sub(center.multiplyScalar(scale));
+                
+                this.model.updateMatrixWorld(true);
+
+                this.boxHelper = new THREE.Box3Helper(new THREE.Box3().setFromObject(this.model), 0xff0000);
+                this.boxHelper.visible = this.boxHelperVisible;
+                this.scene.add(this.boxHelper);
                 
                 URL.revokeObjectURL(url);
 
@@ -167,6 +187,13 @@ class ModelManager {
             y: size.y.toFixed(4),
             z: size.z.toFixed(4)
         };
+    }
+
+    toggleBoxHelper(visible) {
+        this.boxHelperVisible = visible;
+        if (this.boxHelper) {
+            this.boxHelper.visible = visible;
+        }
     }
 }
 

@@ -3,6 +3,7 @@ class LightingManager {
         this.scene = scene;
         this.lights = {};
         this.helpers = {};
+        this.helpersVisible = false;
         this.setupLights();
     }
 
@@ -18,6 +19,7 @@ class LightingManager {
         this.scene.add(this.lights.light1);
         
         this.helpers.light1 = new THREE.PointLightHelper(this.lights.light1, 0.2);
+        this.helpers.light1.visible = this.helpersVisible;
         this.scene.add(this.helpers.light1);
 
         // Point Light 2 (Cool Fill)
@@ -26,6 +28,7 @@ class LightingManager {
         this.scene.add(this.lights.light2);
         
         this.helpers.light2 = new THREE.PointLightHelper(this.lights.light2, 0.2);
+        this.helpers.light2.visible = this.helpersVisible;
         this.scene.add(this.helpers.light2);
 
         // Point Light 3 (Purple Accent)
@@ -34,6 +37,7 @@ class LightingManager {
         this.scene.add(this.lights.light3);
         
         this.helpers.light3 = new THREE.PointLightHelper(this.lights.light3, 0.2);
+        this.helpers.light3.visible = this.helpersVisible;
         this.scene.add(this.helpers.light3);
     }
 
@@ -54,6 +58,15 @@ class LightingManager {
         
         if (helper) {
             helper.update();
+        }
+    }
+
+    toggleLightHelpers(visible) {
+        this.helpersVisible = visible;
+        for (const key in this.helpers) {
+            if (this.helpers[key]) {
+                this.helpers[key].visible = visible;
+            }
         }
     }
 }

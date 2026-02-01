@@ -135,6 +135,16 @@ class UIManager {
             this.sceneManager.toggleHelpers(event.target.checked);
         });
 
+        // Box Helper Toggle
+        safeListen('showBoxHelper', 'change', (event) => {
+            this.modelManager.toggleBoxHelper(event.target.checked);
+        });
+
+        // Light Helper Toggle
+        safeListen('showLightHelper', 'change', (event) => {
+            this.lightingManager.toggleLightHelpers(event.target.checked);
+        });
+
         // HDRI Loader
         safeListen('hdriInput', 'change', (event) => {
             const file = event.target.files[0];
