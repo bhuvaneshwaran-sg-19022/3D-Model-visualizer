@@ -357,6 +357,47 @@
         #pasteBtn:active {
             transform: translateY(1px);
         }
+
+        /* Dropdown Styles */
+        .split-btn-container {
+            display: flex;
+            margin-top: 10px;
+            position: relative;
+        }
+        
+        #downloadDropdownContent {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #2a2a2a;
+            min-width: 160px;
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+            z-index: 1;
+            border: 1px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        #downloadDropdownContent button {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            margin: 0;
+            border-radius: 0;
+            font-size: 13px;
+        }
+
+        #downloadDropdownContent button:hover {
+            background-color: #444;
+        }
+
+        .show {display:block !important;}
     </style>
 </head>
 <body>
@@ -404,7 +445,16 @@
                 <div class="control-group">
                     <h2>Load Model</h2>
                     <input type="file" id="fileInput" accept=".glb,.gltf">
-                    <button id="downloadBtn">Download Image</button>
+                    
+                    <div class="split-btn-container">
+                        <button id="downloadBtn" style="border-top-right-radius: 0; border-bottom-right-radius: 0; margin-top: 0; flex-grow: 1;">Download PNG</button>
+                        <button id="downloadDropdownBtn" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-top: 0; border-left: 1px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
+                            ▼
+                        </button>
+                        <div id="downloadDropdownContent">
+                            <button id="downloadWebPBtn">Download WebP</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="control-group">

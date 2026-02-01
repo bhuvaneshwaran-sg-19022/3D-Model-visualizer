@@ -150,7 +150,7 @@ class SceneManager {
         }
     }
 
-    getScreenshotBlob(callback) {
+    getScreenshotBlob(callback, mimeType = 'image/png') {
         const THREE = ThreeBundle.THREE;
         const currentSize = this.renderer.getSize(new THREE.Vector2());
         
@@ -168,7 +168,7 @@ class SceneManager {
             this.render();
             
             if (callback) callback(blob);
-        });
+        }, mimeType);
     }
 }
 

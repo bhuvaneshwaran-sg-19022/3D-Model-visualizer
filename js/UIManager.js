@@ -206,17 +206,32 @@ class UIManager {
              this.pasteSettings();
         });
 
-        // Download
+        // Download PNG (Default)
         safeListen('downloadBtn', 'click', () => {
-            const fileName = this.modelManager.getCurrentFileName();
-            this.sceneManager.getScreenshotBlob((blob) => {
-                 const url = URL.createObjectURL(blob);
-                 const link = document.createElement('a');
-                 link.href = url;
-                 link.download = 'show-' + fileName + '.png';
-                 link.click();
-                 URL.revokeObjectURL(url);
-            });
+            this.handleDownload('image/png', 'png');
+        });
+
+        // Download Dropdown Toggle
+        safeListen('downloadDropdownBtn', 'click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('downloadDropdownContent');
+            if (dropdown) dropdown.classList.toggle('show');
+        });
+
+        // Download WebP
+        safeListen('downloadWebPBtn', 'click', () => {
+             this.handleDownload('image/webp', 'webp');
+        });
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.matches('#downloadDropdownBtn')) {
+                const dropdowns = document.getElementsByClassName("dropdown-content");
+                const dropdown = document.getElementById('downloadDropdownContent');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
         });
 
         // Reset
@@ -238,6 +253,18 @@ class UIManager {
                 this.handleUpdate(key);
             });
         });
+    }
+
+    handleDownload(mimeType, extension) {
+        const fileName = this.modelManager.getCurrentFileName();
+        this.sceneManager.getScreenshotBlob((blob) => {
+             const url = URL.createObjectURL(blob);
+             const link = document.createElement('a');
+             link.href = url;
+             link.download = 'show-' + fileName + '.' + extension;
+             link.click();
+             URL.revokeObjectURL(url);
+        }, mimeType);
     }
 
     updateModelInfo() {
