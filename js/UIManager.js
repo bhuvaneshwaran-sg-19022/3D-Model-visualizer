@@ -7,10 +7,11 @@ class UIManager {
         this.animationManager = animationManager;
 
         this.controls = this.getControls();
-        this.valueDisplays = this.getValueDisplays();
+        this.numberInputs = {};
         this.loadingElement = document.getElementById('loading');
         this.animationListElement = document.getElementById('animationList');
 
+        this.setupNumberInputs();
         this.setupEventListeners();
         this.setupTabSystem();
     }
@@ -49,36 +50,6 @@ class UIManager {
         };
     }
 
-    getValueDisplays() {
-        return {
-            envBlur: document.getElementById('envBlur-value'),
-            envIntensity: document.getElementById('envIntensity-value'),
-            rotX: document.getElementById('rotX-value'),
-            rotY: document.getElementById('rotY-value'),
-            rotZ: document.getElementById('rotZ-value'),
-            camX: document.getElementById('camX-value'),
-            camY: document.getElementById('camY-value'),
-            camZ: document.getElementById('camZ-value'),
-            lookX: document.getElementById('lookX-value'),
-            lookY: document.getElementById('lookY-value'),
-            lookZ: document.getElementById('lookZ-value'),
-            fov: document.getElementById('fov-value'),
-            ambientIntensity: document.getElementById('ambientIntensity-value'),
-            light1Intensity: document.getElementById('light1Intensity-value'),
-            light1X: document.getElementById('light1X-value'),
-            light1Y: document.getElementById('light1Y-value'),
-            light1Z: document.getElementById('light1Z-value'),
-            light2Intensity: document.getElementById('light2Intensity-value'),
-            light2X: document.getElementById('light2X-value'),
-            light2Y: document.getElementById('light2Y-value'),
-            light2Z: document.getElementById('light2Z-value'),
-            light3Intensity: document.getElementById('light3Intensity-value'),
-            light3X: document.getElementById('light3X-value'),
-            light3Y: document.getElementById('light3Y-value'),
-            light3Z: document.getElementById('light3Z-value')
-        };
-    }
-
     setupTabSystem() {
         window.openTab = function(evt, tabName) {
             const tabContents = document.getElementsByClassName('tab-content');
@@ -92,6 +63,77 @@ class UIManager {
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.classList.add('active');
         };
+    }
+
+    setupNumberInputs() {
+        Object.keys(this.controls).forEach(key => {
+            const rangeInput = this.controls[key];
+            if (!rangeInput || rangeInput.type !== 'range') return;
+
+            const parent = rangeInput.parentNode;
+            if (!parent) return;
+
+            // Create container
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.gap = '10px';
+
+            // Insert container before range input
+            parent.insertBefore(container, rangeInput);
+
+            // Move range input into container
+            container.appendChild(rangeInput);
+
+            // Create number input
+            const numInput = document.createElement('input');
+            numInput.type = 'number';
+            numInput.id = key + '-input'; 
+            numInput.value = rangeInput.value;
+            numInput.step = rangeInput.step;
+            numInput.min = rangeInput.min;
+            if (rangeInput.max) numInput.max = rangeInput.max;
+            
+            // Inline styles to override CSS
+            numInput.style.width = '60px';
+            numInput.style.padding = '4px 2px';
+            numInput.style.background = '#333';
+            numInput.style.border = '1px solid #555';
+            numInput.style.color = '#fff';
+            numInput.style.borderRadius = '4px';
+            numInput.style.fontSize = '12px';
+            numInput.style.textAlign = 'center';
+
+            // Styling adjustments for range input
+            rangeInput.style.flex = '1';
+            rangeInput.style.width = 'auto';
+
+            container.appendChild(numInput);
+            
+            // Store reference
+            this.numberInputs[key] = numInput;
+
+            // Sync: Range -> Number (Immediate visual sync)
+            rangeInput.addEventListener('input', () => {
+                numInput.value = rangeInput.value;
+            });
+
+            // Sync: Number -> Range
+            numInput.addEventListener('input', () => {
+                let val = parseFloat(numInput.value);
+                if (numInput.value === '') return;
+
+                rangeInput.value = numInput.value;
+                // Dispatch input event so other listeners fire
+                rangeInput.dispatchEvent(new Event('input'));
+                
+                // For envBlur, the main listener is 'change', so dispatch that too if needed.
+                // UIManager.js says: const eventType = (key === 'envBlur') ? 'change' : ...
+                if (key === 'envBlur') {
+                     rangeInput.dispatchEvent(new Event('change'));
+                }
+            });
+        });
     }
 
     setupEventListeners() {
@@ -380,9 +422,8 @@ class UIManager {
     }
 
     updateDisplay(key, value) {
-        if (this.valueDisplays[key]) {
-            const unit = key.includes('rot') || key === 'fov' ? '°' : '';
-            this.valueDisplays[key].textContent = value + unit;
+        if (this.numberInputs && this.numberInputs[key]) {
+            this.numberInputs[key].value = value;
         }
     }
 
