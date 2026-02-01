@@ -201,6 +201,11 @@ class UIManager {
             this.copySettings();
         });
 
+        // Paste Config
+        safeListen('pasteBtn', 'click', () => {
+             this.pasteSettings();
+        });
+
         // Download
         safeListen('downloadBtn', 'click', () => {
             const fileName = this.modelManager.getCurrentFileName();
@@ -376,6 +381,107 @@ class UIManager {
             alert('Settings copied to console (clipboard failed)');
             console.log(json);
         });
+    }
+
+    pasteSettings() {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+             this.manualPaste();
+             return;
+        }
+
+        navigator.clipboard.readText().then(text => {
+            this.processPastedText(text);
+        }).catch(err => {
+            console.error('Failed to read clipboard:', err);
+            this.manualPaste(); // User might have denied permission
+        });
+    }
+
+    manualPaste() {
+         const text = prompt("Paste your settings JSON here:");
+         if (text) {
+             this.processPastedText(text);
+         }
+    }
+
+    processPastedText(text) {
+        try {
+            const config = JSON.parse(text);
+            this.applyConfig(config);
+            
+            const btn = document.getElementById('pasteBtn');
+            if (btn) {
+               const originalContent = btn.innerHTML;
+               btn.textContent = 'Applied!';
+               setTimeout(() => btn.innerHTML = originalContent, 2000);
+            }
+        } catch (err) {
+            console.error('Failed to parse settings:', err);
+            alert('Invalid settings JSON. Check console for error details.');
+        }
+    }
+
+    applyConfig(config) {
+        if (config.modelProperties) {
+            if (config.modelProperties.rotate) {
+                this.controls.rotX.value = config.modelProperties.rotate.x || 0;
+                this.controls.rotY.value = config.modelProperties.rotate.y || 0;
+                this.controls.rotZ.value = config.modelProperties.rotate.z || 0;
+            }
+            if (config.modelProperties.camera) {
+                 const cam = config.modelProperties.camera;
+                 if (cam.position) {
+                    this.controls.camX.value = cam.position.x || 0;
+                    this.controls.camY.value = cam.position.y || 0;
+                    this.controls.camZ.value = cam.position.z || 30;
+                 }
+                 if (cam.lookAt) {
+                    this.controls.lookX.value = cam.lookAt.x || 0;
+                    this.controls.lookY.value = cam.lookAt.y || 0;
+                    this.controls.lookZ.value = cam.lookAt.z || 0;
+                 }
+                 if (cam.projection?.perspective) {
+                     this.controls.fov.value = cam.projection.perspective.fieldOfView || 75;
+                 }
+            }
+        }
+        
+        if (config.envSettings) {
+            this.controls.envBlur.value = config.envSettings.blur || 0;
+            this.controls.envIntensity.value = config.envSettings.intensity || 1;
+        }
+
+        if (config.lightingSettings) {
+            if (config.lightingSettings.ambient) {
+                this.controls.ambientColor.value = config.lightingSettings.ambient.color || '#ffffff';
+                this.controls.ambientIntensity.value = config.lightingSettings.ambient.intensity || 1;
+            }
+            if (config.lightingSettings.lights) {
+                config.lightingSettings.lights.forEach(light => {
+                    if (light.name === 'light1') {
+                        this.controls.light1Color.value = light.color;
+                        this.controls.light1Intensity.value = light.intensity;
+                        this.controls.light1X.value = light.position.x;
+                        this.controls.light1Y.value = light.position.y;
+                        this.controls.light1Z.value = light.position.z;
+                    } else if (light.name === 'light2') {
+                        this.controls.light2Color.value = light.color;
+                        this.controls.light2Intensity.value = light.intensity;
+                        this.controls.light2X.value = light.position.x;
+                        this.controls.light2Y.value = light.position.y;
+                        this.controls.light2Z.value = light.position.z;
+                    } else if (light.name === 'light3') {
+                        this.controls.light3Color.value = light.color;
+                        this.controls.light3Intensity.value = light.intensity;
+                        this.controls.light3X.value = light.position.x;
+                        this.controls.light3Y.value = light.position.y;
+                        this.controls.light3Z.value = light.position.z;
+                    }
+                });
+            }
+        }
+        
+        this.updateAll(true);
     }
 
     clearAnimationHighlights() {

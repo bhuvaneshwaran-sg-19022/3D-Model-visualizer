@@ -40,7 +40,6 @@ class SceneManager {
         
         // Scene setup
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0xffffff);
 
         // Camera config
         const cameraProps = config.modelProperties?.camera || {};
