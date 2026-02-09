@@ -10,12 +10,12 @@ class LightingManager {
     setupLights() {
         const THREE = ThreeBundle.THREE;
         // Ambient Light
-        this.lights.ambient = new THREE.AmbientLight(0xffffff, 1.0);
+        this.lights.ambient = new THREE.AmbientLight(0x808080, 0.5);
         this.scene.add(this.lights.ambient);
 
         // Point Light 1 (Warm Key)
-        this.lights.light1 = new THREE.PointLight(0xffbf7f, 15, 0);
-        this.lights.light1.position.set(2.3, 2.7, 1.634);
+        this.lights.light1 = new THREE.PointLight(0xffbf80, 9.765625, 0);
+        this.lights.light1.position.set(2.196, 7.092, 1.634);
         this.scene.add(this.lights.light1);
         
         this.helpers.light1 = new THREE.PointLightHelper(this.lights.light1, 0.2);
@@ -23,7 +23,7 @@ class LightingManager {
         this.scene.add(this.helpers.light1);
 
         // Point Light 2 (Cool Fill)
-        this.lights.light2 = new THREE.PointLight(0x6699f2, 15, 0);
+        this.lights.light2 = new THREE.PointLight(0x6699f2, 12.25, 0);
         this.lights.light2.position.set(-3.796, 5.113, 5.763);
         this.scene.add(this.lights.light2);
         
@@ -32,7 +32,7 @@ class LightingManager {
         this.scene.add(this.helpers.light2);
 
         // Point Light 3 (Purple Accent)
-        this.lights.light3 = new THREE.PointLight(0xddb9ff, 15, 0);
+        this.lights.light3 = new THREE.PointLight(0xddb9ff, 3.125, 0);
         this.lights.light3.position.set(-3.774, 5.806, -3.477);
         this.scene.add(this.lights.light3);
         
