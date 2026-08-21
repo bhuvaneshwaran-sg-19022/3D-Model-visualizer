@@ -8,6 +8,7 @@ class ThreeDViewer {
         
         // Pass a callback to ModelManager if we want to handle animations automatically
         this.modelManager = new ModelManager(this.sceneManager.scene, config);
+        this.presetManager = new PresetManager(this.sceneManager, this.modelManager, this.envManager);
         
         // Setup initial model if URL exists
         if (config.url) {
@@ -24,6 +25,7 @@ class ThreeDViewer {
                         this.uiManager.updateAnimationList(gltf.animations);
                         this.uiManager.updateModelInfo();
                     }
+                    this.presetManager.rebuildPreviewCameras();
                 }
             });
         }
@@ -35,7 +37,8 @@ class ThreeDViewer {
                 this.lightingManager, 
                 this.envManager, 
                 this.modelManager,
-                this.animationManager
+                this.animationManager,
+                this.presetManager
             );
         }
 
@@ -52,6 +55,7 @@ class ThreeDViewer {
             this.animationManager.update();
         }
         this.sceneManager.render();
+        this.presetManager.renderPreview();
 	}
 	
 }

@@ -150,19 +150,23 @@ class SceneManager {
         }
     }
 
-    getScreenshotBlob(callback, mimeType = 'image/png') {
+    getScreenshotBlob(callback, mimeType = 'image/png', width = 300, height = 300) {
         const THREE = ThreeBundle.THREE;
         const currentSize = this.renderer.getSize(new THREE.Vector2());
-        
-        // Render at 1080x1080
-        this.renderer.setSize(1080, 1080);
-        this.camera.aspect = 1;
+        const currentPixelRatio = this.renderer.getPixelRatio();
+
+        // Force 1:1 pixel ratio so the exported image is exactly width x height,
+        // regardless of the display's devicePixelRatio.
+        this.renderer.setPixelRatio(1);
+        this.renderer.setSize(width, height);
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.renderer.render(this.scene, this.camera);
         
         // Get the image data
         this.canvas.toBlob((blob) => {
-            // Restore original size
+            // Restore original size/pixel ratio
+            this.renderer.setPixelRatio(currentPixelRatio);
             this.renderer.setSize(currentSize.width, currentSize.height);
             this.onResize();
             this.render();

@@ -1,10 +1,11 @@
 class UIManager {
-    constructor(sceneManager, lightingManager, envManager, modelManager, animationManager) {
+    constructor(sceneManager, lightingManager, envManager, modelManager, animationManager, presetManager) {
         this.sceneManager = sceneManager;
         this.lightingManager = lightingManager;
         this.envManager = envManager;
         this.modelManager = modelManager;
         this.animationManager = animationManager;
+        this.presetManager = presetManager;
 
         this.controls = this.getControls();
         this.numberInputs = {};
@@ -14,6 +15,7 @@ class UIManager {
         this.setupNumberInputs();
         this.setupEventListeners();
         this.setupTabSystem();
+        this.setupPresetsTab();
     }
 
     getControls() {
@@ -51,6 +53,7 @@ class UIManager {
     }
 
     setupTabSystem() {
+        const presetManager = this.presetManager;
         window.openTab = function(evt, tabName) {
             const tabContents = document.getElementsByClassName('tab-content');
             for (let i = 0; i < tabContents.length; i++) {
@@ -62,7 +65,180 @@ class UIManager {
             }
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.classList.add('active');
+
+            if (presetManager) {
+                if (tabName === 'presetsTab') {
+                    const canvas = document.getElementById('presetsPreviewCanvas');
+                    if (canvas) presetManager.activatePreview(canvas);
+                } else {
+                    presetManager.deactivatePreview();
+                }
+            }
         };
+    }
+
+    setupPresetsTab() {
+        const grid = document.getElementById('presetGrid');
+        if (!grid || !this.presetManager) return;
+
+        this.renderPresetList();
+
+        const runBatchDownload = async (btn, mimeType, extension) => {
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Downloading...';
+            try {
+                const { width, height } = this.getDownloadResolution();
+                await this.presetManager.downloadAllAngles(mimeType, extension, width, height);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        };
+
+        const safeListen = (id, event, callback) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener(event, callback);
+        };
+
+        // Add Angle
+        safeListen('addPresetBtn', 'click', () => {
+            this.presetManager.addPreset();
+            this.renderPresetList();
+        });
+
+        // Download All (Default: WebP)
+        safeListen('downloadAllPresetsBtn', 'click', () => {
+            const btn = document.getElementById('downloadAllPresetsBtn');
+            runBatchDownload(btn, 'image/webp', 'webp');
+        });
+
+        // Download All Dropdown Toggle
+        safeListen('downloadAllPresetsDropdownBtn', 'click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('downloadAllPresetsDropdownContent');
+            if (dropdown) dropdown.classList.toggle('show');
+        });
+
+        // Download All (PNG)
+        safeListen('downloadAllPresetsPngBtn', 'click', () => {
+            const btn = document.getElementById('downloadAllPresetsPngBtn');
+            runBatchDownload(btn, 'image/png', 'png');
+        });
+    }
+
+    // Rebuilds the preset card list + live-preview labels from presetManager.presets.
+    // Called on initial setup and whenever a preset is added or removed.
+    renderPresetList() {
+        const grid = document.getElementById('presetGrid');
+        const labelsContainer = document.getElementById('presetPreviewLabels');
+        if (!grid || !this.presetManager) return;
+
+        grid.innerHTML = '';
+        this.presetManager.presets.forEach((preset, index) => {
+            grid.appendChild(this.buildPresetItem(preset, index));
+        });
+
+        if (labelsContainer) {
+            labelsContainer.innerHTML = '';
+            const cols = this.presetManager.previewCols;
+            const rows = Math.max(1, Math.ceil(this.presetManager.presets.length / cols));
+            labelsContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            this.presetManager.presets.forEach((preset) => {
+                const label = document.createElement('span');
+                label.textContent = preset.name;
+                labelsContainer.appendChild(label);
+            });
+        }
+    }
+
+    buildPresetItem(preset, index) {
+        const item = document.createElement('div');
+        item.className = 'preset-item';
+
+        // Header: editable name + delete
+        const header = document.createElement('div');
+        header.className = 'preset-item-header';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'preset-name-input';
+        nameInput.value = preset.name;
+        nameInput.addEventListener('input', () => {
+            preset.name = nameInput.value;
+            const labelsContainer = document.getElementById('presetPreviewLabels');
+            if (labelsContainer) labelsContainer.children[index].textContent = preset.name;
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'preset-delete-btn';
+        deleteBtn.title = 'Delete this angle';
+        deleteBtn.textContent = '✕';
+        deleteBtn.disabled = this.presetManager.presets.length <= 1;
+        deleteBtn.addEventListener('click', () => {
+            this.presetManager.removePreset(index);
+            this.renderPresetList();
+        });
+
+        header.appendChild(nameInput);
+        header.appendChild(deleteBtn);
+
+        // Direction inputs (X/Y/Z)
+        const dirRow = document.createElement('div');
+        dirRow.className = 'preset-dir-inputs';
+        ['X', 'Y', 'Z'].forEach((axis, axisIndex) => {
+            const label = document.createElement('label');
+            label.textContent = axis;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.step = '0.1';
+            input.value = preset.dir[axisIndex];
+            input.addEventListener('input', () => {
+                const val = parseFloat(input.value);
+                if (Number.isNaN(val)) return;
+                preset.dir[axisIndex] = val;
+                this.presetManager.updatePresetDir(index);
+            });
+
+            label.appendChild(input);
+            dirRow.appendChild(label);
+        });
+
+        // Actions: view + download
+        const actions = document.createElement('div');
+        actions.className = 'preset-item-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.type = 'button';
+        viewBtn.className = 'preset-view-btn';
+        viewBtn.textContent = 'View';
+        viewBtn.addEventListener('click', () => this.presetManager.applyPreset(preset));
+
+        const dlBtn = document.createElement('button');
+        dlBtn.type = 'button';
+        dlBtn.className = 'preset-download-btn';
+        dlBtn.title = 'Download this angle (WebP)';
+        dlBtn.textContent = '⬇';
+        dlBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            dlBtn.disabled = true;
+            try {
+                const { width, height } = this.getDownloadResolution();
+                await this.presetManager.downloadSingleAngle(preset, 'image/webp', 'webp', width, height);
+            } finally {
+                dlBtn.disabled = false;
+            }
+        });
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(dlBtn);
+
+        item.appendChild(header);
+        item.appendChild(dirRow);
+        item.appendChild(actions);
+        return item;
     }
 
     setupNumberInputs() {
@@ -162,6 +338,7 @@ class UIManager {
                         const clips = this.animationManager.setupAnimations(gltf.scene, animations);
                         this.updateAnimationList(clips);
                         this.updateModelInfo();
+                        if (this.presetManager) this.presetManager.rebuildPreviewCameras();
                         setTimeout(() => this.updateAll(false), 100);
                     },
                     onError: (error) => {
@@ -206,9 +383,9 @@ class UIManager {
              this.pasteSettings();
         });
 
-        // Download PNG (Default)
+        // Download WebP (Default)
         safeListen('downloadBtn', 'click', () => {
-            this.handleDownload('image/png', 'png');
+            this.handleDownload('image/webp', 'webp');
         });
 
         // Download Dropdown Toggle
@@ -218,20 +395,16 @@ class UIManager {
             if (dropdown) dropdown.classList.toggle('show');
         });
 
-        // Download WebP
-        safeListen('downloadWebPBtn', 'click', () => {
-             this.handleDownload('image/webp', 'webp');
+        // Download PNG
+        safeListen('downloadPngBtn', 'click', () => {
+             this.handleDownload('image/png', 'png');
         });
 
-        // Close dropdown when clicking outside
-        window.addEventListener('click', (e) => {
-            if (!e.target.matches('#downloadDropdownBtn')) {
-                const dropdowns = document.getElementsByClassName("dropdown-content");
-                const dropdown = document.getElementById('downloadDropdownContent');
-                if (dropdown && dropdown.classList.contains('show')) {
-                    dropdown.classList.remove('show');
-                }
-            }
+        // Close any open download dropdown when clicking outside its toggle button
+        window.addEventListener('click', () => {
+            document.querySelectorAll('.download-dropdown-content.show').forEach((dropdown) => {
+                dropdown.classList.remove('show');
+            });
         });
 
         // Reset
@@ -255,8 +428,17 @@ class UIManager {
         });
     }
 
+    getDownloadResolution() {
+        const widthInput = document.getElementById('downloadResWidth');
+        const heightInput = document.getElementById('downloadResHeight');
+        const width = parseInt(widthInput?.value, 10) || 300;
+        const height = parseInt(heightInput?.value, 10) || 300;
+        return { width, height };
+    }
+
     handleDownload(mimeType, extension) {
         const fileName = this.modelManager.getCurrentFileName();
+        const { width, height } = this.getDownloadResolution();
         this.sceneManager.getScreenshotBlob((blob) => {
              const url = URL.createObjectURL(blob);
              const link = document.createElement('a');
@@ -264,7 +446,7 @@ class UIManager {
              link.download = 'show-' + fileName + '.' + extension;
              link.click();
              URL.revokeObjectURL(url);
-        }, mimeType);
+        }, mimeType, width, height);
     }
 
     updateModelInfo() {
@@ -460,7 +642,7 @@ class UIManager {
                  if (cam.position) {
                     this.controls.camX.value = cam.position.x || 0;
                     this.controls.camY.value = cam.position.y || 0;
-                    this.controls.camZ.value = cam.position.z || 30;
+                    this.controls.camZ.value = cam.position.z || 4;
                  }
                  if (cam.lookAt) {
                     this.controls.lookX.value = cam.lookAt.x || 0;
@@ -468,7 +650,7 @@ class UIManager {
                     this.controls.lookZ.value = cam.lookAt.z || 0;
                  }
                  if (cam.projection?.perspective) {
-                     this.controls.fov.value = cam.projection.perspective.fieldOfView || 75;
+                     this.controls.fov.value = cam.projection.perspective.fieldOfView || 45;
                  }
             }
         }
@@ -528,11 +710,11 @@ class UIManager {
         this.controls.rotZ.value = 0;
         this.controls.camX.value = 0;
         this.controls.camY.value = 0;
-        this.controls.camZ.value = 30;
+        this.controls.camZ.value = 4;
         this.controls.lookX.value = 0;
         this.controls.lookY.value = 0;
         this.controls.lookZ.value = 0;
-        this.controls.fov.value = 75;
+        this.controls.fov.value = 45;
         this.controls.ambientColor.value = '#ffffff';
         this.controls.ambientIntensity.value = 1.0;
         this.controls.light1Color.value = '#ffbf7f';

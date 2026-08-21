@@ -365,7 +365,7 @@
             position: relative;
         }
         
-        #downloadDropdownContent {
+        .download-dropdown-content {
             display: none;
             position: absolute;
             right: 0;
@@ -380,7 +380,7 @@
             margin-top: 2px;
         }
 
-        #downloadDropdownContent button {
+        .download-dropdown-content button {
             color: white;
             padding: 12px 16px;
             text-decoration: none;
@@ -393,11 +393,170 @@
             font-size: 13px;
         }
 
-        #downloadDropdownContent button:hover {
+        .download-dropdown-content button:hover {
             background-color: #444;
         }
 
         .show {display:block !important;}
+
+        .download-res-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .download-res-inputs input[type="number"] {
+            width: 70px;
+        }
+
+        .download-res-inputs span {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Presets Tab */
+        .preset-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .preset-item {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        .preset-item-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .preset-name-input {
+            flex: 1;
+            padding: 6px 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .preset-delete-btn {
+            width: 28px;
+            flex: none;
+            margin-top: 0;
+            background: #d32f2f;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .preset-delete-btn:hover {
+            background: #b71c1c;
+        }
+
+        .preset-dir-inputs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .preset-dir-inputs label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: #888;
+            margin: 0;
+        }
+
+        .preset-dir-inputs input {
+            width: 100%;
+            padding: 4px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .preset-item-actions {
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .preset-view-btn {
+            flex: 1;
+            margin-top: 0;
+            border-radius: 0;
+            font-size: 12px;
+        }
+
+        .preset-download-btn {
+            width: 40px;
+            flex: none;
+            margin-top: 0;
+            border-radius: 0;
+            border-left: 1px solid rgba(0,0,0,0.2);
+            background: #388E3C;
+            padding: 0;
+        }
+
+        .preset-download-btn:hover {
+            background: #2e7d32;
+        }
+
+        .preset-download-btn:disabled,
+        .preset-delete-btn:disabled,
+        #downloadAllPresetsBtn:disabled,
+        #downloadAllPresetsPngBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #addPresetBtn {
+            background: #555;
+        }
+
+        #addPresetBtn:hover {
+            background: #666;
+        }
+
+        .preset-preview-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .preset-preview-labels {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            pointer-events: none;
+        }
+
+        .preset-preview-labels span {
+            display: flex;
+            align-items: flex-end;
+            padding: 3px 5px;
+            font-size: 9px;
+            color: #fff;
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -433,6 +592,7 @@
             <div class="tab-container">
                 <button class="tab active" onclick="openTab(event, 'modelTab')">Model</button>
                 <button class="tab" onclick="openTab(event, 'cameraTab')">Camera</button>
+                <button class="tab" onclick="openTab(event, 'presetsTab')">Presets</button>
                 <button class="tab" onclick="openTab(event, 'envTab')">Environment</button>
                 <button class="tab" onclick="openTab(event, 'lightingTab')">Lighting</button>
                 <button class="tab" onclick="openTab(event, 'animationTab')">Animations</button>
@@ -447,13 +607,20 @@
                     <input type="file" id="fileInput" accept=".glb,.gltf">
                     
                     <div class="split-btn-container">
-                        <button id="downloadBtn" style="border-top-right-radius: 0; border-bottom-right-radius: 0; margin-top: 0; flex-grow: 1;">Download PNG</button>
+                        <button id="downloadBtn" style="border-top-right-radius: 0; border-bottom-right-radius: 0; margin-top: 0; flex-grow: 1;">Download WebP</button>
                         <button id="downloadDropdownBtn" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-top: 0; border-left: 1px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
                             ▼
                         </button>
-                        <div id="downloadDropdownContent">
-                            <button id="downloadWebPBtn">Download WebP</button>
+                        <div id="downloadDropdownContent" class="download-dropdown-content">
+                            <button id="downloadPngBtn">Download PNG</button>
                         </div>
+                    </div>
+
+                    <div class="download-res-inputs">
+                        <label style="margin: 0; flex-shrink: 0;">Download Size</label>
+                        <input type="number" id="downloadResWidth" value="300" min="16" max="4096">
+                        <span>×</span>
+                        <input type="number" id="downloadResHeight" value="300" min="16" max="4096">
                     </div>
                 </div>
 
@@ -520,7 +687,7 @@
                     </div>
                     <div class="control-item">
                         <label>Position Z</label>
-                        <input type="range" id="camZ" min="-50" max="50" value="30" step="0.1">
+                        <input type="range" id="camZ" min="-50" max="50" value="4" step="0.1">
                     </div>
                 </div>
 
@@ -544,11 +711,43 @@
                     <h2>Camera FOV</h2>
                     <div class="control-item">
                         <label>Field of View</label>
-                        <input type="range" id="fov" min="20" max="120" value="75" step="1">
+                        <input type="range" id="fov" min="20" max="120" value="45" step="1">
                     </div>
                 </div>
 
                 <button class="resetBtn">Reset All Settings</button>
+            </div>
+
+            <!-- Presets Tab -->
+            <div id="presetsTab" class="tab-content">
+                <h1>Camera Presets</h1>
+
+                <div class="control-group">
+                    <h2>Live Preview (All Angles)</h2>
+                    <div class="preset-preview-wrapper">
+                        <canvas id="presetsPreviewCanvas"></canvas>
+                        <div id="presetPreviewLabels" class="preset-preview-labels"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h2>View Angle Presets</h2>
+                    <div id="presetGrid" class="preset-grid"></div>
+                    <button id="addPresetBtn" type="button">+ Add Angle</button>
+                </div>
+
+                <div class="control-group">
+                    <h2>Download All Angles</h2>
+                    <div class="split-btn-container">
+                        <button id="downloadAllPresetsBtn" style="border-top-right-radius: 0; border-bottom-right-radius: 0; margin-top: 0; flex-grow: 1;">Download All (WebP)</button>
+                        <button id="downloadAllPresetsDropdownBtn" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-top: 0; border-left: 1px solid rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
+                            ▼
+                        </button>
+                        <div id="downloadAllPresetsDropdownContent" class="download-dropdown-content">
+                            <button id="downloadAllPresetsPngBtn">Download All (PNG)</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Environment Tab -->
@@ -680,6 +879,7 @@
     <script src="js/LightingManager.js"></script>
     <script src="js/AnimationManager.js"></script>
     <script src="js/ModelManager.js"></script>
+    <script src="js/PresetManager.js"></script>
     <script src="js/UIManager.js"></script>
     <script src="js/main.js"></script>
     <script>
@@ -693,7 +893,7 @@
                     // This model is large, so we scale it down to fit the camera view
                     // scale: { x: 0.01, y: 0.01, z: 0.01 },
                     camera: {
-                        position: { x: 0, y: 0, z: 30 },
+                        position: { x: 0, y: 0, z: 4 },
                         lookAt: { x: 0, y: 0, z: 0 },
                         projection: {
                             type: 'PERSPECTIVE', // or 'ORTHOGRAPHIC'
