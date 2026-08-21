@@ -91,10 +91,40 @@ class PresetManager {
         return [0, 1, 0];
     }
 
+    // Applies roll (rotation around the view direction itself) on top of the default up-vector.
+    computeUp(dir, rollDeg) {
+        const THREE = ThreeBundle.THREE;
+        const baseUp = new THREE.Vector3(...this.computeUpForDir(dir));
+        if (!rollDeg) return baseUp.toArray();
+        const dirVec = new THREE.Vector3(...dir).normalize();
+        baseUp.applyAxisAngle(dirVec, THREE.MathUtils.degToRad(rollDeg));
+        return baseUp.toArray();
+    }
+
+    // Direction vector <-> azimuth/elevation in degrees, so the UI can show human-friendly
+    // angles instead of raw XYZ components. Azimuth is measured from +Z (front) towards +X
+    // (right), elevation is the tilt up/down from the horizontal plane.
+    dirToAngles(dir) {
+        const THREE = ThreeBundle.THREE;
+        const v = new THREE.Vector3(...dir).normalize();
+        const azimuth = THREE.MathUtils.radToDeg(Math.atan2(v.x, v.z));
+        const elevation = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(v.y, -1, 1)));
+        return { azimuth, elevation };
+    }
+
+    anglesToDir(azimuthDeg, elevationDeg) {
+        const THREE = ThreeBundle.THREE;
+        const azimuth = THREE.MathUtils.degToRad(azimuthDeg);
+        const elevation = THREE.MathUtils.degToRad(elevationDeg);
+        const cosEl = Math.cos(elevation);
+        return [cosEl * Math.sin(azimuth), Math.sin(elevation), cosEl * Math.cos(azimuth)];
+    }
+
     addPreset(name, dir) {
         const preset = {
             name: name || `Angle ${this.presets.length + 1}`,
             dir: dir || [0, 0, 1],
+            roll: 0,
             up: this.computeUpForDir(dir || [0, 0, 1])
         };
         this.presets.push(preset);
@@ -107,11 +137,11 @@ class PresetManager {
         this.rebuildPreviewCameras();
     }
 
-    // Call after directly mutating a preset's dir so its up-vector and the live preview stay in sync.
+    // Call after directly mutating a preset's dir/roll so its up-vector and the live preview stay in sync.
     updatePresetDir(index) {
         const preset = this.presets[index];
         if (!preset) return;
-        preset.up = this.computeUpForDir(preset.dir);
+        preset.up = this.computeUp(preset.dir, preset.roll || 0);
         this.rebuildPreviewCameras();
     }
 

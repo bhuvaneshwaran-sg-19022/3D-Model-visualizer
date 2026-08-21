@@ -184,21 +184,40 @@ class UIManager {
         header.appendChild(nameInput);
         header.appendChild(deleteBtn);
 
-        // Direction inputs (X/Y/Z)
+        // Direction as rotation angles in degrees (same X/Y/Z convention as the Model
+        // Rotation controls), instead of raw direction-vector components.
         const dirRow = document.createElement('div');
         dirRow.className = 'preset-dir-inputs';
-        ['X', 'Y', 'Z'].forEach((axis, axisIndex) => {
+        const { azimuth, elevation } = this.presetManager.dirToAngles(preset.dir);
+        if (preset.roll === undefined) preset.roll = 0;
+
+        const angleFields = [
+            { key: 'elevation', label: 'Rot X \u00b0', title: 'Rotation X (tilt up/down, in degrees)', value: elevation, min: -90, max: 90 },
+            { key: 'azimuth', label: 'Rot Y \u00b0', title: 'Rotation Y (orbit around the model, in degrees)', value: azimuth, min: -180, max: 180 },
+            { key: 'roll', label: 'Rot Z \u00b0', title: 'Rotation Z (camera roll around the view direction, in degrees)', value: preset.roll, min: -180, max: 180 }
+        ];
+
+        const angleState = { azimuth, elevation, roll: preset.roll };
+        angleFields.forEach((field) => {
             const label = document.createElement('label');
-            label.textContent = axis;
+            label.textContent = field.label;
+            label.title = field.title;
 
             const input = document.createElement('input');
             input.type = 'number';
-            input.step = '0.1';
-            input.value = preset.dir[axisIndex];
+            input.step = '1';
+            input.min = field.min;
+            input.max = field.max;
+            input.value = Math.round(field.value);
             input.addEventListener('input', () => {
                 const val = parseFloat(input.value);
                 if (Number.isNaN(val)) return;
-                preset.dir[axisIndex] = val;
+                angleState[field.key] = val;
+                if (field.key === 'roll') {
+                    preset.roll = val;
+                } else {
+                    preset.dir = this.presetManager.anglesToDir(angleState.azimuth, angleState.elevation);
+                }
                 this.presetManager.updatePresetDir(index);
             });
 
