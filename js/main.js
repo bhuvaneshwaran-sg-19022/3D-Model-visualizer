@@ -43,7 +43,7 @@ class ThreeDViewer {
         }
 
         // Load default HDRI if needed, or from config if we add it later
-        this.envManager.loadHDRI('./js/garden.hdr');
+        // this.envManager.loadHDRI('./js/garden.hdr');
 
         this.renderFrame();
     }
