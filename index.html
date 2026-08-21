@@ -885,9 +885,8 @@
     <script>
         window.addEventListener('load', () => {
             const threeDConfig = {
-                // Using LittlestTokyo.glb - a compressed GLB that uses Draco
-                url : 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
-                id : 'littlest_tokyo',
+                // No default model URL - the user loads their own GLB/GLTF via the file input.
+                id : 'model',
                 modelProperties: {
                     rotate : { x: 0, y: 0, z: 0 },
                     // This model is large, so we scale it down to fit the camera view
