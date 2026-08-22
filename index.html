@@ -236,6 +236,17 @@
             background: #333;
         }
 
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
         .value-display {
             display: inline-block;
             float: right;
@@ -753,7 +764,32 @@
             <!-- Environment Tab -->
             <div id="envTab" class="tab-content">
                 <h1>Environment</h1>
-                
+
+                <div class="control-group">
+                    <h2>Preset</h2>
+                    <div class="control-item">
+                        <label>Environment Type</label>
+                        <select id="envType">
+                            <option value="room">Studio (Room)</option>
+                            <option value="sky">Sky</option>
+                            <option value="hdri">Custom (Uploaded HDRI)</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group" id="skyControlsGroup" style="display: none;">
+                    <h2>Sky Settings</h2>
+                    <div class="control-item">
+                        <label>Sun Elevation</label>
+                        <input type="range" id="skyElevation" min="-10" max="90" value="20" step="1">
+                    </div>
+                    <div class="control-item">
+                        <label>Sun Azimuth</label>
+                        <input type="range" id="skyAzimuth" min="-180" max="180" value="180" step="1">
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <h2>Load HDRI</h2>
                     <input type="file" id="hdriInput" accept=".hdr,.exr">
@@ -873,6 +909,8 @@
 
     <script src="three.zscustom.js"></script>
     <script src="rgbeloader.js"></script>
+    <script src="js/RoomEnvironment.js"></script>
+    <script src="js/Sky.js"></script>
 
     <script src="js/SceneManager.js"></script>
     <script src="js/EnvironmentManager.js"></script>

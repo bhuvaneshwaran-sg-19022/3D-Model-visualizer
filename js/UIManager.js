@@ -16,10 +16,14 @@ class UIManager {
         this.setupEventListeners();
         this.setupTabSystem();
         this.setupPresetsTab();
+        this.syncEnvironmentTypeUI();
     }
 
     getControls() {
         return {
+            envType: document.getElementById('envType'),
+            skyElevation: document.getElementById('skyElevation'),
+            skyAzimuth: document.getElementById('skyAzimuth'),
             envBlur: document.getElementById('envBlur'),
             envIntensity: document.getElementById('envIntensity'),
             rotX: document.getElementById('rotX'),
@@ -389,6 +393,7 @@ class UIManager {
             if (file) {
                 const url = URL.createObjectURL(file);
                 this.envManager.loadHDRI(url, this.controls.envBlur?.value || 0, this.controls.envIntensity?.value || 1);
+                this.syncEnvironmentTypeUI('hdri');
             }
         });
 
@@ -438,13 +443,42 @@ class UIManager {
             const element = this.controls[key];
             if (!element) return;
             
-            const eventType = (key === 'envBlur') ? 'change' : (element.type === 'color' ? 'input' : 'input');
+            const eventType = (key === 'envBlur' || key === 'envType') ? 'change' : (element.type === 'color' ? 'input' : 'input');
             
             element.addEventListener(eventType, () => {
                 this.updateDisplay(key, element.value);
                 this.handleUpdate(key);
             });
         });
+    }
+
+    // Shows/hides the Sky sub-controls and reflects envManager's active preset in the dropdown.
+    syncEnvironmentTypeUI(type) {
+        const envTypeEl = this.controls.envType;
+        if (!envTypeEl) return;
+
+        envTypeEl.value = type || this.envManager.currentType || 'room';
+
+        const skyGroup = document.getElementById('skyControlsGroup');
+        if (skyGroup) skyGroup.style.display = (envTypeEl.value === 'sky') ? 'block' : 'none';
+    }
+
+    // Handles switching between the Room/Sky/Custom HDRI/None environment presets.
+    handleEnvTypeChange() {
+        const type = this.controls.envType.value;
+        this.syncEnvironmentTypeUI(type);
+
+        if (type === 'hdri') {
+            if (this.envManager.currentHDRITexture) {
+                this.envManager.setEnvironmentType('hdri');
+                this.envManager.updateEnvironment(parseFloat(this.controls.envBlur.value), parseFloat(this.controls.envIntensity.value));
+            } else {
+                // No HDRI uploaded yet, prompt the user to pick one via the usual upload button.
+                document.getElementById('hdriInput')?.click();
+            }
+        } else {
+            this.envManager.setEnvironmentType(type, parseFloat(this.controls.envIntensity.value));
+        }
     }
 
     getDownloadResolution() {
@@ -553,6 +587,9 @@ class UIManager {
                 }
             },
             envSettings: {
+                type: this.controls.envType.value,
+                skyElevation: parseFloat(this.controls.skyElevation.value),
+                skyAzimuth: parseFloat(this.controls.skyAzimuth.value),
                 blur: parseFloat(this.controls.envBlur.value),
                 intensity: parseFloat(this.controls.envIntensity.value)
             },
@@ -675,8 +712,13 @@ class UIManager {
         }
         
         if (config.envSettings) {
+            this.controls.envType.value = config.envSettings.type || 'room';
+            this.controls.skyElevation.value = config.envSettings.skyElevation ?? 20;
+            this.controls.skyAzimuth.value = config.envSettings.skyAzimuth ?? 180;
             this.controls.envBlur.value = config.envSettings.blur || 0;
             this.controls.envIntensity.value = config.envSettings.intensity || 1;
+            this.envManager.setSunPosition(parseFloat(this.controls.skyElevation.value), parseFloat(this.controls.skyAzimuth.value), { skipApply: true });
+            this.handleEnvTypeChange();
         }
 
         if (config.lightingSettings) {
@@ -722,6 +764,9 @@ class UIManager {
     }
 
     resetControls() {
+        this.controls.envType.value = 'room';
+        this.controls.skyElevation.value = 20;
+        this.controls.skyAzimuth.value = 180;
         this.controls.envBlur.value = 0;
         this.controls.envIntensity.value = 1;
         this.controls.rotX.value = 0;
@@ -752,6 +797,8 @@ class UIManager {
         this.controls.light3Y.value = 5.806;
         this.controls.light3Z.value = -3.477;
 
+        this.envManager.setSunPosition(20, 180, { skipApply: true });
+        this.handleEnvTypeChange();
         this.updateAll(true);
     }
 
@@ -816,6 +863,10 @@ class UIManager {
                 if (key.includes('light1')) this.lightingManager.updateLight('light1', this.controls.light1Color.value, this.controls.light1Intensity.value, this.controls.light1X.value, this.controls.light1Y.value, this.controls.light1Z.value);
                 if (key.includes('light2')) this.lightingManager.updateLight('light2', this.controls.light2Color.value, this.controls.light2Intensity.value, this.controls.light2X.value, this.controls.light2Y.value, this.controls.light2Z.value);
                 if (key.includes('light3')) this.lightingManager.updateLight('light3', this.controls.light3Color.value, this.controls.light3Intensity.value, this.controls.light3X.value, this.controls.light3Y.value, this.controls.light3Z.value);
+            } else if (key === 'envType') {
+                this.handleEnvTypeChange();
+            } else if (key === 'skyElevation' || key === 'skyAzimuth') {
+                this.envManager.setSunPosition(parseFloat(this.controls.skyElevation.value), parseFloat(this.controls.skyAzimuth.value));
             } else if (key.includes('env')) {
                 this.envManager.updateEnvironment(parseFloat(this.controls.envBlur.value), parseFloat(this.controls.envIntensity.value));
             }

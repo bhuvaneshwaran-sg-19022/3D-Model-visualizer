@@ -227,27 +227,38 @@ class PresetManager {
 
     // ── Downloads (offscreen, never disturbs the main camera or the live preview) ──
 
-    // Regenerates a PMREM environment map for the given renderer's own WebGL context.
+    // Regenerates a PMREM environment map for the given renderer's own WebGL context, matching
+    // whatever preset (Room/Sky/Custom HDRI/None) is currently active in the main envManager.
     // A PMREM texture only lives in the GPU memory of the context that rendered it, so
     // it can't be reused as-is by a different WebGLRenderer/canvas — each needs its own.
     applyOwnEnvironment(renderer, cacheKey, scene) {
-        const hdriTexture = this.envManager?.currentHDRITexture;
-        if (!hdriTexture) return;
+        if (!this.envManager) return;
+        const type = this.envManager.currentType;
+
+        if (type === 'none') {
+            scene.environment = null;
+            return;
+        }
 
         const THREE = ThreeBundle.THREE;
         const state = this.envCache[cacheKey] || (this.envCache[cacheKey] = {});
+        const sourceRef = this.envManager.getEnvironmentSourceRef();
 
-        if (state.sourceTexture !== hdriTexture) {
+        if (state.type !== type || state.sourceRef !== sourceRef || !state.renderTarget) {
             if (!state.pmremGenerator) {
                 state.pmremGenerator = new THREE.PMREMGenerator(renderer);
                 state.pmremGenerator.compileEquirectangularShader();
             }
-            if (state.renderTarget) state.renderTarget.dispose();
-            state.renderTarget = state.pmremGenerator.fromEquirectangular(hdriTexture);
-            state.sourceTexture = hdriTexture;
+            const newRenderTarget = this.envManager.bakeEnvironmentForRenderer(state.pmremGenerator);
+            if (newRenderTarget) {
+                if (state.renderTarget) state.renderTarget.dispose();
+                state.renderTarget = newRenderTarget;
+                state.type = type;
+                state.sourceRef = sourceRef;
+            }
         }
 
-        scene.environment = state.renderTarget.texture;
+        scene.environment = state.renderTarget ? state.renderTarget.texture : null;
     }
 
     getOffscreenRenderer() {
